@@ -1,6 +1,7 @@
 
 import numpy as np
 
+from collaborative_filtering.collaborative_filtering import CollaborativeFiltering
 from matrix_factorization.matrix_factorization import MatrixFactorization
 
 
@@ -14,5 +15,9 @@ if __name__ == '__main__':
         while sample_data[x_idx, y_idx] != 0:
             x_idx, y_idx = np.random.randint(0, len_x), np.random.randint(0, len_y)
         sample_data[x_idx, y_idx] = val
-    mf = MatrixFactorization(sample_data, len_k, epochs=50)
-    mf.train()
+    # mf = MatrixFactorization(sample_data, len_k, epochs=50)
+    # mf.train()
+    cf = CollaborativeFiltering(sample_data)
+    cf.fit()
+    one_user = np.random.randint(1, 11, len_y)
+    print(cf.predict(one_user))

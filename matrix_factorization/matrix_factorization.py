@@ -3,14 +3,13 @@ import numpy as np
 
 
 class MatrixFactorization:
-    def __init__(self, data, hidden_dim, learning_rate=0.01, beta=0.1, epochs=100, seed=42, bias=False):
+    def __init__(self, data, hidden_dim, learning_rate=0.01, beta=0.1, epochs=100, seed=42):
         self.data = data
         self.hidden_dim = hidden_dim
         self.input_dim, self.output_dim = data.shape
         self.lr = learning_rate
         self.beta = beta
         self.epochs = epochs
-        self.bias = bias
         self.random_seed = seed
         np.random.seed(self.random_seed)
         self.p_mat, self.q_mat = self.initialize()
