@@ -7,19 +7,32 @@ from multi_armed_bandit.environment import RandomBandit
 class MultiArmedBandit:
     def __init__(self, number_of_arms):
         self.env = RandomBandit(number_of_arms)
-        self.avg = []
+        self.avg = [0] * number_of_arms
         self.log = []
         for _ in range(number_of_arms):
-            self.avg.append([0])
             self.log.append([0, 0])
         self.avg = np.array(self.avg, dtype=np.float)
+        self.regret = 0.0
+        self.cnt = 0
 
-    def predict(self):
+    def predict_and_update(self):
+        select = self._predict()
+        self._update_regret(select)
+        self.cnt += 1
+        reward = self.env.pull(select)
+        self._update(select, reward)
+
+    def _predict(self):
         raise NotImplementedError()
 
-    def update(self, idx, reward):
+    def _update(self, idx, reward):
         self.log[idx][0] += reward
         self.log[idx][1] += 1
+        self.avg[idx] = float(self.log[idx][0]) / float(self.log[idx][1])
+
+    def _update_regret(self, select):
+        real_max = np.max(self.env.arms)
+        self.regret += real_max - self.env.arms[select]
 
 
 class EpsilonGreedy(MultiArmedBandit):
@@ -27,35 +40,38 @@ class EpsilonGreedy(MultiArmedBandit):
         super(EpsilonGreedy, self).__init__(number_of_arms)
         self.epsilon = epsilon
 
-    def predict(self):
+    def _predict(self):
         val = np.random.random()
         if val > self.epsilon:
             return np.random.choice(range(len(self.avg)))
         return np.argmax(self.avg)
 
-    def update(self, idx, reward):
-        super(EpsilonGreedy, self).update(idx, reward)
-        self.avg[idx] = float(self.log[idx][0]) / float(self.log[idx][1])
+    def _update(self, idx, reward):
+        super(EpsilonGreedy, self)._update(idx, reward)
+
+
+class UCB1(MultiArmedBandit):
+    def __init__(self, number_of_arms):
+        super(UCB1, self).__init__(number_of_arms)
+        self.ucb = np.ones(number_of_arms) * 100
+
+    def _predict(self):
+        return np.argmax(self.avg + self.ucb)
+
+    def _update(self, idx, reward):
+        super(UCB1, self)._update(idx, reward)
+        for idx in range(len(self.env.arms)):
+            if self.log[idx][1] != 0:
+                self.ucb[idx] = np.sqrt(2 * np.log(self.cnt) / self.log[idx][1])
 
 
 if __name__ == '__main__':
-    bandit = EpsilonGreedy(10, 0.9)
+    arms, iters = 10, 500
+    # bandit = EpsilonGreedy(arms, 0.9)
+    bandit = UCB1(arms)
     print(bandit.env.arms)
-    for _ in range(1000):
-        one = bandit.predict()
-        reward = bandit.env.pull(one)
-        bandit.update(one, reward)
-    print('Updated!!')
+    for _ in range(iters):
+        bandit.predict_and_update()
     print(bandit.avg)
     print(bandit.log)
-
-    rewards, cnt = 0, 0
-    res = {idx: 0 for idx in range(10)}
-    for _ in range(100):
-        one = bandit.predict()
-        res[one] += 1
-        reward = bandit.env.pull(one)
-        rewards += reward
-        cnt += 1
-    print(res)
-    print(rewards, cnt)
+    print(bandit.regret / bandit.cnt)
