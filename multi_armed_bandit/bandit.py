@@ -5,8 +5,8 @@ from multi_armed_bandit.environment import RandomBandit
 
 
 class MultiArmedBandit:
-    def __init__(self, number_of_arms):
-        self.env = RandomBandit(number_of_arms)
+    def __init__(self, number_of_arms, env=None):
+        self.env = RandomBandit(number_of_arms) if not env else env
         self.avg = [0] * number_of_arms
         self.log = []
         for _ in range(number_of_arms):
@@ -36,8 +36,8 @@ class MultiArmedBandit:
 
 
 class EpsilonGreedy(MultiArmedBandit):
-    def __init__(self, number_of_arms, epsilon):
-        super(EpsilonGreedy, self).__init__(number_of_arms)
+    def __init__(self, number_of_arms, env=None, epsilon=0.9):
+        super(EpsilonGreedy, self).__init__(number_of_arms, env)
         self.epsilon = epsilon
 
     def _predict(self):
@@ -51,8 +51,8 @@ class EpsilonGreedy(MultiArmedBandit):
 
 
 class UCB1(MultiArmedBandit):
-    def __init__(self, number_of_arms):
-        super(UCB1, self).__init__(number_of_arms)
+    def __init__(self, number_of_arms, env=None):
+        super(UCB1, self).__init__(number_of_arms, env)
         self.ucb = np.ones(number_of_arms) * 100
 
     def _predict(self):
@@ -66,8 +66,8 @@ class UCB1(MultiArmedBandit):
 
 
 class ThompsonSampling(MultiArmedBandit):
-    def __init__(self, number_of_arms):
-        super(ThompsonSampling, self).__init__(number_of_arms)
+    def __init__(self, number_of_arms, env=None):
+        super(ThompsonSampling, self).__init__(number_of_arms, env)
 
     def _predict(self):
         max_val = 0
@@ -83,12 +83,15 @@ class ThompsonSampling(MultiArmedBandit):
 
 if __name__ == '__main__':
     arms, iters = 10, 500
+    env = RandomBandit(arms)
+    bandits = [EpsilonGreedy(arms, env, 0.9), UCB1(arms, env), ThompsonSampling(arms, env)]
     # bandit = EpsilonGreedy(arms, 0.9)
     # bandit = UCB1(arms)
-    bandit = ThompsonSampling(arms)
-    print(bandit.env.arms)
-    for _ in range(iters):
-        bandit.predict_and_update()
-    print(bandit.avg)
-    print(bandit.log)
-    print(bandit.regret / bandit.cnt)
+    # bandit = ThompsonSampling(arms)
+    print(env.arms)
+    for bandit in bandits:
+        for _ in range(iters):
+            bandit.predict_and_update()
+        print(bandit.avg)
+        print(bandit.log)
+        print(bandit.regret / bandit.cnt)
