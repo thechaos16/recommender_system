@@ -65,10 +65,27 @@ class UCB1(MultiArmedBandit):
                 self.ucb[idx] = np.sqrt(2 * np.log(self.cnt) / self.log[idx][1])
 
 
+class ThompsonSampling(MultiArmedBandit):
+    def __init__(self, number_of_arms):
+        super(ThompsonSampling, self).__init__(number_of_arms)
+
+    def _predict(self):
+        max_val = 0
+        max_idx = None
+        for idx in range(len(self.env.arms)):
+            a, b = self.log[idx][0] + 1, self.log[idx][1] - self.log[idx][0] + 1
+            beta_sample = np.random.beta(a, b, 1)
+            if beta_sample > max_val:
+                max_val = beta_sample
+                max_idx = idx
+        return max_idx
+
+
 if __name__ == '__main__':
     arms, iters = 10, 500
     # bandit = EpsilonGreedy(arms, 0.9)
-    bandit = UCB1(arms)
+    # bandit = UCB1(arms)
+    bandit = ThompsonSampling(arms)
     print(bandit.env.arms)
     for _ in range(iters):
         bandit.predict_and_update()
